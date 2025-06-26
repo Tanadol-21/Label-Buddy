@@ -3,6 +3,7 @@ import requests
 import io
 import base64
 import os
+from flask import render_template
 
 app = Flask(__name__)
 
@@ -72,6 +73,8 @@ def tts():
         return jsonify({"error": f"VAJA API error: {response.status_code}"}), 500
 
     return send_file(io.BytesIO(response.content), mimetype="audio/wav")
+def webui():
+    return render_template("index.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
