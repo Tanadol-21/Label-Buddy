@@ -7,8 +7,8 @@ import os
 app = Flask(__name__)
 
 # กำหนด API Key จาก Environment Variables
-os.environ['VAJA_API_KEY'] = "bBPTrefkfhEYXr89NuWmaKX585b32al6"
-os.environ['TYPHOON_API_KEY'] = "sk-GpP1k660e16eel96QWGSBVNRbBs55uTB5dwZ4AmlFPmQPXS3"
+VAJA_API_KEY = os.environ.get("VAJA_API_KEY")
+TYPHOON_API_KEY = os.environ.get("TYPHOON_API_KEY")
 
 VAJA_API_URL = "https://speech-synthesis-api.nectec.or.th/tts"
 VAJA_SPEAKER = "narumol"
