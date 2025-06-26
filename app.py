@@ -1,9 +1,8 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, render_template
 import requests
 import io
 import base64
 import os
-from flask import render_template
 
 app = Flask(__name__)
 
@@ -21,6 +20,10 @@ if not VAJA_API_KEY or not TYPHOON_API_KEY:
 @app.route('/')
 def home():
     return jsonify({"status": "Label Buddy Backend is running"})
+
+@app.route('/web')
+def webui():
+    return render_template("index.html")   # <-- แสดงหน้าสำหรับ UI
 
 @app.route('/ocr', methods=["POST"])
 def ocr():
@@ -73,8 +76,6 @@ def tts():
         return jsonify({"error": f"VAJA API error: {response.status_code}"}), 500
 
     return send_file(io.BytesIO(response.content), mimetype="audio/wav")
-@app.route("/web")
-def webui():
-    return render_template("index.html")   # <-- ต้องมีแบบนี้
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
