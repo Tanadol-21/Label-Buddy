@@ -1,81 +1,49 @@
-from flask import Flask, request, send_file, jsonify, render_template
-import requests
-import io
-import base64
+from flask import Flask, request, render_template
 import os
+import requests
+from typhoon_ocr import ocr_document
 
 app = Flask(__name__)
+UPLOAD_FOLDER = 'static'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# กำหนด API Key จาก Environment Variables
-VAJA_API_KEY = os.environ.get("VAJA_API_KEY")
-TYPHOON_API_KEY = os.environ.get("TYPHOON_API_KEY")
+# API keys
+os.environ['TYPHOON_OCR_API_KEY'] = 'sk-SMrtW1JrLSLfYMHZhhD8Kk13A6ZuxnEuZN9RoenbaHbytiF6'
+VAJA_API_KEY = 'bBPTrefkfhEYXr89NuWmaKX585b32al6'
 
-VAJA_API_URL = "https://speech-synthesis-api.nectec.or.th/tts"
-VAJA_SPEAKER = "narumol"
-TYPHOON_API_URL = "https://api.aiforthai.in.th/ocr"  # ตัวอย่าง URL OCR
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        file = request.files['image']
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(image_path)
 
-if not VAJA_API_KEY or not TYPHOON_API_KEY:
-    raise Exception("API Keys for VAJA or Typhoon are missing!")
+        # OCR
+        text = ocr_document(image_path, task_type="default")
 
-@app.route('/')
-def home():
-    return jsonify({"status": "Label Buddy Backend is running"})
+        # สังเคราะห์เสียง
+        url = 'https://api.aiforthai.in.th/vaja9/synth_audiovisual'
+        headers = {'Apikey': VAJA_API_KEY, 'Content-Type': 'application/json'}
+        data = {'input_text': text, 'speaker': 1, 'phrase_break': 0, 'audiovisual': 0}
+        response = requests.post(url, json=data, headers=headers)
 
-@app.route('/web')
-def webui():
-    return render_template("index.html")   # <-- แสดงหน้าสำหรับ UI
+        audio_file = None
+        if response.status_code == 200:
+            wav_url = response.json().get('wav_url')
+            resp = requests.get(wav_url, headers={'Apikey': VAJA_API_KEY})
+            if resp.status_code == 200:
+                output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'result.wav')
+                with open(output_path, 'wb') as f:
+                    f.write(resp.content)
+                audio_file = 'result.wav'
+            else:
+                text += "\n\n[❌ ERROR ดาวน์โหลดเสียงล้มเหลว]"
+        else:
+            text += "\n\n[❌ ERROR แปลงเสียงล้มเหลว]"
 
-@app.route('/ocr', methods=["POST"])
-def ocr():
-    if 'image' not in request.files:
-        return jsonify({"error": "Missing image"}), 400
+        return render_template('index.html', markdown=text, image_file=file.filename, audio_file=audio_file)
 
-    image_file = request.files['image']
-    image_bytes = image_file.read()
-    encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+    return render_template('index.html')
 
-    headers = {
-        "Apikey": TYPHOON_API_KEY,
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "file": encoded_image,
-        "detectOrientation": True
-    }
-
-    response = requests.post(TYPHOON_API_URL, json=payload, headers=headers)
-
-    if response.status_code != 200:
-        return jsonify({"error": f"OCR API error: {response.status_code}"}), 500
-
-    ocr_text = response.json().get("original_lines", [])
-    full_text = "\n".join(ocr_text)
-    return jsonify({"text": full_text})
-
-@app.route('/tts')
-def tts():
-    text = request.args.get("text")
-    if not text:
-        return jsonify({"error": "Missing 'text' parameter"}), 400
-
-    headers = {
-        "Authorization": f"Bearer {VAJA_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "text": text,
-        "speaker": VAJA_SPEAKER,
-        "format": "wav"
-    }
-
-    response = requests.post(VAJA_API_URL, json=payload, headers=headers)
-
-    if response.status_code != 200:
-        return jsonify({"error": f"VAJA API error: {response.status_code}"}), 500
-
-    return send_file(io.BytesIO(response.content), mimetype="audio/wav")
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+if __name__ == '__main__':
+    app.run(debug=True)
