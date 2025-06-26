@@ -73,8 +73,8 @@ def tts():
         return jsonify({"error": f"VAJA API error: {response.status_code}"}), 500
 
     return send_file(io.BytesIO(response.content), mimetype="audio/wav")
+@app.route("/web")
 def webui():
-    return render_template("index.html")
-
+    return render_template("index.html")   # <-- ต้องมีแบบนี้
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
