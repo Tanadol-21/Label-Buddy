@@ -83,10 +83,32 @@
 <body>
   <div class="card">
     <h1>🔊Label Buddy - แปลงรูปภาพเป็นเสียง</h1>
-    <p>อัปโหลดภาพ ระบบจะถอดข้อความแล้วพูดให้ฟัง</p>
-    <input type="file" accept="image/*" id="imageInput">
-    <div id="textOutput">📄 รอข้อความจากภาพ...</div>
+    <form method="POST" enctype="multipart/form-data" style="margin-bottom:24px;">
+      <input type="file" name="image" accept="image/*" id="imageInput" required>
+      <button type="submit">อัปโหลดภาพ</button>
+    </form>
+    
+    {# แสดงภาพที่อัปโหลด #}
+    {% if image_file %}
+      <img src="{{ url_for('static', filename=image_file) }}" alt="uploaded image" style="max-width: 220px; margin-bottom: 15px;">
+    {% endif %}
+
+    <div id="textOutput">
+      {% if text %}
+        {{ text|safe }}
+      {% else %}
+        📄 รอข้อความจากภาพ...
+      {% endif %}
+    </div>
     <button onclick="speakText()">🔈 อ่านออกเสียง</button>
+
+    {% if audio_file %}
+      <h3 style="margin-top:24px;">🔊 ฟังเสียงที่แปลงจาก AI4Thai</h3>
+      <audio controls>
+        <source src="{{ url_for('static', filename=audio_file) }}" type="audio/wav">
+        เบราว์เซอร์ของคุณไม่รองรับการเล่นเสียง
+      </audio>
+    {% endif %}
   </div>
   <script>
     function speakText() {
@@ -98,10 +120,9 @@
       }
       const synth = window.speechSynthesis;
       if (synth.speaking) {
-        synth.cancel(); // หยุดเสียงที่กำลังเล่นอยู่ก่อน
+        synth.cancel(); // หยุดเสียงที่กำลังพูดอยู่ก่อน
       }
       const utter = new SpeechSynthesisUtterance(text);
-      // ตรวจสอบภาษาอัตโนมัติ
       utter.lang = (/[\u0E00-\u0E7F]/.test(text)) ? 'th-TH' : 'en-US';
       synth.speak(utter);
     }
