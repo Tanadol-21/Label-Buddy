@@ -6,17 +6,12 @@
   <title>Label Buddy - แปลงรูปภาพเป็นเสียง</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
     body {
       font-family: 'Kanit', sans-serif;
       background-color: #dff3ff;
       margin: 0; padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      display: flex; justify-content: center; align-items: center;
       min-height: 100vh;
-      line-height: 1.6; 
-      color: #222; 
     }
     .card {
       background-color: white;
@@ -27,40 +22,26 @@
       max-width: 480px;
       text-align: center;
     }
-    h1 {
-      font-size: 2rem;
-      color: #007bff;
-      margin-bottom: 1rem;
-      font-weight: 600;
-    }
-    p {
-      font-size: 1.15rem;
-      margin-bottom: 1.8rem;
-      color: #444;
-    }
     input[type="file"] {
-      font-size: 1rem;
       padding: 0.75rem;
       border-radius: 10px;
       border: 1.5px solid #007bff;
-      background-color: #f9f9f9;
       width: 100%;
-      margin-bottom: 1.2rem;
+      margin-bottom: 1rem;
     }
     #textOutput {
       font-size: 1rem;
       background-color: #f0f8ff;
       padding: 1rem;
       border-radius: 10px;
-      color: #003366;
       white-space: pre-line;
-      line-height: 1.6;
-      min-height: 100px;
       text-align: left;
+      min-height: 100px;
+      margin-top: 1rem;
     }
     button {
       margin-top: 1.5rem;
-      padding: 0.9rem 1.5rem;
+      padding: 0.9rem;
       font-size: 1.2rem;
       background-color: #00aaff;
       color: white;
@@ -68,60 +49,57 @@
       border-radius: 12px;
       cursor: pointer;
       width: 100%;
-      transition: background-color 0.3s ease;
     }
     button:hover {
       background-color: #007acc;
-    }
-    @media (min-width: 768px) {
-      h1 { font-size: 2.2rem; }
-      p { font-size: 1.3rem; }
-      button { font-size: 1.4rem; }
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>🔊Label Buddy - แปลงรูปภาพเป็นเสียง</h1>
-    <form method="POST" enctype="multipart/form-data" style="margin-bottom:24px;">
-      <input type="file" name="image" accept="image/*" id="imageInput" required>
+    <h1>🔊 Label Buddy</h1>
+    <form method="POST" enctype="multipart/form-data">
+      <input type="file" name="image" accept="image/*" required>
       <button type="submit">อัปโหลดภาพ</button>
     </form>
-    
-    {# แสดงภาพที่อัปโหลด #}
+
     {% if image_file %}
-      <img src="{{ url_for('static', filename=image_file) }}" alt="uploaded image" style="max-width: 220px; margin-bottom: 15px;">
+      <img src="{{ url_for('static', filename=image_file) }}" alt="Uploaded Image" style="max-width: 220px; margin-top: 15px;">
     {% endif %}
 
-    <div id="textOutput">
-      {% if text %}
-        {{ text|safe }}
+    {% set color = '#003366' %}
+    {% if markdown and '❌' in markdown %}
+      {% set color = 'red' %}
+    {% endif %}
+
+    <div id="textOutput" style="color: {{ color }};">
+      {% if markdown %}
+        {{ markdown | safe }}
       {% else %}
         📄 รอข้อความจากภาพ...
       {% endif %}
     </div>
+
     <button onclick="speakText()">🔈 อ่านออกเสียง</button>
 
     {% if audio_file %}
-      <h3 style="margin-top:24px;">🔊 ฟังเสียงที่แปลงจาก AI4Thai</h3>
+      <h3>🔊 ฟังเสียงที่แปลงจาก AI4Thai</h3>
       <audio controls>
         <source src="{{ url_for('static', filename=audio_file) }}" type="audio/wav">
-        เบราว์เซอร์ของคุณไม่รองรับการเล่นเสียง
       </audio>
     {% endif %}
   </div>
+
   <script>
     function speakText() {
       const textOutput = document.getElementById('textOutput');
       const text = textOutput.textContent.trim();
       if (!text || text.startsWith('📄') || text.startsWith('⏳')) {
-        alert('ยังไม่มีข้อความให้อ่านออกเสียง');
+        alert('ยังไม่มีข้อความให้อ่าน');
         return;
       }
       const synth = window.speechSynthesis;
-      if (synth.speaking) {
-        synth.cancel(); // หยุดเสียงที่กำลังพูดอยู่ก่อน
-      }
+      if (synth.speaking) synth.cancel();
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = (/[\u0E00-\u0E7F]/.test(text)) ? 'th-TH' : 'en-US';
       synth.speak(utter);
