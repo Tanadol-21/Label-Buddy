@@ -80,30 +80,12 @@
       {% endif %}
     </div>
 
-    <button onclick="speakText()">🔈 อ่านออกเสียง</button>
-
     {% if audio_file %}
       <h3>🔊 ฟังเสียงที่แปลงจาก AI4Thai</h3>
-      <audio controls>
+      <audio controls style="width: 100%; height: 50px;">
         <source src="{{ url_for('static', filename=audio_file) }}" type="audio/wav">
       </audio>
     {% endif %}
   </div>
-
-  <script>
-    function speakText() {
-      const textOutput = document.getElementById('textOutput');
-      const text = textOutput.textContent.trim();
-      if (!text || text.startsWith('📄') || text.startsWith('⏳')) {
-        alert('ยังไม่มีข้อความให้อ่าน');
-        return;
-      }
-      const synth = window.speechSynthesis;
-      if (synth.speaking) synth.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = (/[\u0E00-\u0E7F]/.test(text)) ? 'th-TH' : 'en-US';
-      synth.speak(utter);
-    }
-  </script>
 </body>
 </html>
